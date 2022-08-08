@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 
 public class Main {
 
@@ -13,10 +13,13 @@ public class Main {
 
         long startTs = System.currentTimeMillis(); // start time
 
-        List<Thread> threadList = new ArrayList<>();
+        List<Future<?>> threadList = new ArrayList<>();
+
+        ExecutorService threadPool = Executors.newFixedThreadPool(25);
+
 
         for (String text : texts) {
-            threadList.add(new Thread(() -> {
+            threadList.add(threadPool.submit(() -> {
                 int maxSize = 0;
 
                 for (int i = 0; i < text.length(); i++) {
@@ -36,21 +39,22 @@ public class Main {
                         }
                     }
                 }
-                System.out.println(text.substring(0, 100) + " -> " + maxSize);
-            }));
+                System.out.println("выполнил " + Thread.currentThread().getName());
+                return text.substring(0, 100) + " -> " + maxSize;
 
+            }));
         }
 
-        threadList.forEach(Thread::start);
         threadList.forEach(x -> {
             try {
-                x.join();
-            } catch (InterruptedException e) {
+                System.out.println(x.get());
+            } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
         });
         long endTs = System.currentTimeMillis(); // end time
 
+        threadPool.shutdown();
         System.out.println("Time: " + (endTs - startTs) + "ms");
     }
 
